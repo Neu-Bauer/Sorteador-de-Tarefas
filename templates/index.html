@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteador de Tarefas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans">
+    <div class="container mx-auto p-4 md:p-8">
+
+        <!-- Cabeçalho -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">
+                <i class="fa-solid fa-dice text-blue-600"></i>
+                Sorteador de Tarefas
+            </h1>
+        </header>
+
+        <!-- Seção de Alertas/Mensagens -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert-{{ category }} bg-{{ 'green' if category == 'success' else ('red' if category == 'danger' else ('yellow' if category == 'warning' else 'blue')) }}-100 border-l-4 border-{{ 'green' if category == 'success' else ('red' if category == 'danger' else ('yellow' if category == 'warning' else 'blue')) }}-500 text-{{ 'green' if category == 'success' else ('red' if category == 'danger' else ('yellow' if category == 'warning' else 'blue')) }}-700 p-4 mb-6 rounded-md shadow-md" role="alert">
+                        <p class="font-bold capitalize">{{ category }}</p>
+                        <p>{{ message }}</p>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Grid Principal -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- Coluna de Gerenciamento (Esquerda) -->
+            <div class="flex flex-col gap-8">
+                
+                <!-- Card de Turmas e Alunos -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4 border-b pb-2"><i class="fa-solid fa-users-rectangle mr-2 text-blue-500"></i>Turmas e Alunos</h2>
+                    <!-- Formulário para adicionar Turma -->
+                    <form action="{{ url_for('add_turma') }}" method="POST" class="mb-6 flex gap-2">
+                        <input type="text" name="nome_turma" placeholder="Nome da nova turma" class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition" required>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition shadow-md"><i class="fa-solid fa-plus"></i> Add</button>
+                    </form>
+                    <!-- Formulário para adicionar Aluno -->
+                    <form action="{{ url_for('add_aluno') }}" method="POST" class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" name="nome_aluno" placeholder="Nome do novo aluno" class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition" required>
+                        <select name="turma_id" class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition" required>
+                            <option value="" disabled selected>Selecione a Turma</option>
+                            {% for turma in turmas %}
+                                <option value="{{ turma.id }}">{{ turma.nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition shadow-md"><i class="fa-solid fa-user-plus"></i> Add</button>
+                    </form>
+                    <!-- Lista de Alunos -->
+                    <div class="mt-6 max-h-60 overflow-y-auto pr-2">
+                        <h3 class="font-semibold text-lg mb-2">Alunos Cadastrados</h3>
+                        {% if alunos %}
+                            <ul class="space-y-2">
+                                {% for aluno in alunos %}
+                                    <li class="bg-slate-50 p-2 rounded-md flex justify-between items-center">
+                                        <span><i class="fa-solid fa-user text-slate-400 mr-2"></i>{{ aluno.nome }}</span>
+                                        <span class="text-xs bg-blue-100 text-blue-800 font-medium px-2 py-1 rounded-full">{{ aluno.turma_nome }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-slate-500 text-center p-4">Nenhum aluno cadastrado.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Card de Tarefas -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4 border-b pb-2"><i class="fa-solid fa-list-check mr-2 text-green-500"></i>Tarefas</h2>
+                    <!-- Formulário para adicionar Tarefa -->
+                    <form action="{{ url_for('add_tarefa') }}" method="POST" class="mb-6 flex gap-2">
+                        <input type="text" name="descricao_tarefa" placeholder="Descrição da nova tarefa" class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none transition" required>
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold transition shadow-md"><i class="fa-solid fa-plus"></i> Add</button>
+                    </form>
+                    <!-- Lista de Tarefas -->
+                    <div class="mt-6 max-h-60 overflow-y-auto pr-2">
+                        <h3 class="font-semibold text-lg mb-2">Tarefas a Sortear</h3>
+                         {% if tarefas %}
+                            <ul class="space-y-2">
+                                {% for tarefa in tarefas %}
+                                    <li class="bg-slate-50 p-2 rounded-md">
+                                        <i class="fa-regular fa-circle-check text-slate-400 mr-2"></i>{{ tarefa.descricao }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-slate-500 text-center p-4">Nenhuma tarefa cadastrada.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Coluna de Sorteio e Resultados (Direita) -->
+            <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2"><i class="fa-solid fa-bullseye mr-2 text-purple-500"></i>Sorteio e Resultados</h2>
+                
+                <!-- Card de Sorteio -->
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6">
+                    <h3 class="font-bold text-lg mb-3 text-center">Realizar Novo Sorteio</h3>
+                    <form action="{{ url_for('sortear') }}" method="POST" class="flex flex-col gap-4">
+                        <select name="turma_sorteio_id" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition" required>
+                            <option value="" disabled selected>Selecione a turma para sortear</option>
+                            {% for turma in turmas %}
+                                <option value="{{ turma.id }}">{{ turma.nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="w-full bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 font-bold text-lg transition shadow-xl hover:shadow-lg transform hover:-translate-y-1">
+                            <i class="fa-solid fa-dice-five mr-2"></i> SORTEAR TAREFA
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Resultados -->
+                <div class="flex-grow">
+                    <h3 class="font-bold text-lg mb-3">Tarefas Atribuídas</h3>
+                    <div class="overflow-y-auto max-h-[28rem] pr-2">
+                        {% if resultados %}
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-100">
+                                    <tr>
+                                        <th class="p-2 rounded-l-lg">Tarefa</th>
+                                        <th class="p-2">Responsável</th>
+                                        <th class="p-2 rounded-r-lg">Turma</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resultado in resultados %}
+                                    <tr class="border-b">
+                                        <td class="p-2 font-medium">{{ resultado.descricao }}</td>
+                                        <td class="p-2">{{ resultado.aluno_nome }}</td>
+                                        <td class="p-2"><span class="text-xs bg-purple-100 text-purple-800 font-medium px-2 py-1 rounded-full">{{ resultado.turma_nome }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="text-center p-8 bg-slate-50 rounded-lg">
+                                <i class="fa-solid fa-inbox text-4xl text-slate-400 mb-2"></i>
+                                <p class="text-slate-500">Nenhuma tarefa foi sorteada ainda.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Botão de Limpar -->
+                {% if resultados %}
+                <div class="mt-6 border-t pt-4">
+                    <form action="{{ url_for('limpar') }}" method="POST">
+                        <button type="submit" class="w-full bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 font-semibold transition shadow-md">
+                            <i class="fa-solid fa-trash-arrow-up mr-2"></i> Limpar Todos os Sorteios
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
